@@ -1,83 +1,52 @@
 package hinter
 
 import (
-	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
 	"hinter/hinter/common"
+	"hinter/hinter/components"
 	"hinter/hinter/pages"
 )
 
-type Tab int
-
-const (
-	Add = iota
-	Search
-)
-
-const amountOfTabs = 2
-
-func (t Tab) String() string {
-	return [...]string{"Add", "Search"}[t]
-}
-
 type Model struct {
-	menuTabs  []Tab
-	activeTab Tab
-	Entries   []common.Entry
-	Add       pages.AddModel
-	Search    pages.SearchModel
+	Navigation components.NavigationModel
+	Add        pages.AddModel
+	Search     pages.SearchModel
+	Entries    []common.Entry
 }
 
 var InitialModel = Model{
-	menuTabs:  []Tab{Add, Search},
-	activeTab: Add,
-	Entries:   []common.Entry{},
-	Add:       pages.InitialModel(),
+	Navigation: components.InitialNavigation(),
+	Add:        pages.InitialAdd(),
+	Search:     pages.InitialSearch(),
+	Entries:    []common.Entry{},
 }
 
 func (m Model) Init() tea.Cmd {
-	// Just return `nil`, which means "no I/O right now, please."
-	return nil
+	addCmds := m.Add.Init()
+	return tea.Batch(addCmds)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	navModel, navCmds := m.Navigation.Update(msg)
+	m.Navigation = navModel
 
-	case tea.KeyMsg:
-
-		switch msg.String() {
-
-		case "left":
-			m.activeTab = (m.activeTab - 1 + amountOfTabs) % amountOfTabs
-		case "right":
-			m.activeTab = (m.activeTab + 1 + amountOfTabs) % amountOfTabs
-		case "ctrl+c", "ctrl+d":
-			return m, tea.Quit
-		}
-
-	}
-	cmds, add, entries := m.Add.Update(msg, m.Entries)
-	m.Add = add
+	addModel, entries, addCmds := m.Add.Update(msg, m.Entries)
+	m.Add = addModel
 	m.Entries = entries
 
+	cmds := tea.Batch(navCmds, addCmds)
 	return m, cmds
 }
 
 func (m Model) View() string {
 
 	s := ""
-	for tab := 0; tab < len(m.menuTabs); tab++ {
-		if tab == int(m.activeTab) {
-			s += fmt.Sprintf("[%s]", m.menuTabs[tab])
-		} else {
-			s += fmt.Sprintf(" %s ", m.menuTabs[tab])
-		}
-		s += " "
-	}
-	if m.activeTab == Add {
+	s += m.Navigation.View()
+
+	switch m.Navigation.ActiveTab {
+	case common.AddTab():
 		s += m.Add.View()
-	}
-	if m.activeTab == Search {
+	case common.SearchTab():
 		s += m.Search.View(m.Entries)
 	}
 

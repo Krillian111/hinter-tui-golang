@@ -24,7 +24,7 @@ var (
 	blurredPrompt = "> "
 )
 
-func InitialModel() AddModel {
+func InitialAdd() AddModel {
 	key := textinput.NewModel()
 	key.Placeholder = "key"
 	value := textinput.NewModel()
@@ -36,7 +36,7 @@ func (m AddModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m AddModel) Update(msg tea.Msg, entries []common.Entry) (tea.Cmd, AddModel, []common.Entry) {
+func (m AddModel) Update(msg tea.Msg, entries []common.Entry) (AddModel, []common.Entry, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -75,20 +75,20 @@ func (m AddModel) Update(msg tea.Msg, entries []common.Entry) (tea.Cmd, AddModel
 			m.key = inputs[0]
 			m.value = inputs[1]
 
-			return nil, m, entries
+			return m, entries, nil
 		case "enter":
 			key := m.key.Value()
 			value := m.value.Value()
 			entries = append(entries, common.Entry{Key: key, Value: value})
 			m.key.Reset()
 			m.value.Reset()
-			return nil, m, entries
+			return m, entries, nil
 		}
 	}
 
 	// Handle character input and blinks
 	m, cmd = updateInputs(msg, m)
-	return cmd, m, entries
+	return m, entries, cmd
 }
 
 // Pass messages and models through to text input components. Only text inputs

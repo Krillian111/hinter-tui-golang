@@ -7,6 +7,10 @@ import (
 type SearchModel struct {
 }
 
+func InitialSearch() SearchModel {
+	return SearchModel{}
+}
+
 func (m SearchModel) View(entries []common.Entry) string {
 	s := "\n"
 	for i := 0; i < len(entries); i++ {

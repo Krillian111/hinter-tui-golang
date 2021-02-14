@@ -11,14 +11,14 @@ type Model struct {
 	Navigation components.NavigationModel
 	Add        pages.AddModel
 	Search     pages.SearchModel
-	Entries    []common.Entry
+	Repo       common.Repository
 }
 
 var InitialModel = Model{
 	Navigation: components.InitialNavigation(),
 	Add:        pages.InitialAdd(),
 	Search:     pages.InitialSearch(),
-	Entries:    []common.Entry{},
+	Repo:       common.Repo(),
 }
 
 func (m Model) Init() tea.Cmd {
@@ -27,15 +27,24 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	navModel, navCmds := m.Navigation.Update(msg)
 	m.Navigation = navModel
+	cmd = tea.Batch(cmd, navCmds)
 
-	addModel, entries, addCmds := m.Add.Update(msg, m.Entries)
-	m.Add = addModel
-	m.Entries = entries
+	switch m.Navigation.ActiveTab {
+	case common.AddTab():
+		addModel, addCmds := m.Add.Update(msg, m.Repo)
+		m.Add = addModel
+		cmd = tea.Batch(cmd, addCmds)
+	case common.SearchTab():
+		searchModel, searchCmds := m.Search.Update(msg, m.Repo)
+		m.Search = searchModel
+		cmd = tea.Batch(cmd, searchCmds)
+	}
 
-	cmds := tea.Batch(navCmds, addCmds)
-	return m, cmds
+	return m, cmd
 }
 
 func (m Model) View() string {
@@ -47,7 +56,7 @@ func (m Model) View() string {
 	case common.AddTab():
 		s += m.Add.View()
 	case common.SearchTab():
-		s += m.Search.View(m.Entries)
+		s += m.Search.View()
 	}
 
 	return s

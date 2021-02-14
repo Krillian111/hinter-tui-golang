@@ -2,7 +2,6 @@ package pages
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
-	te "github.com/muesli/termenv"
 	"hinter/hinter/common"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -16,14 +15,6 @@ type AddModel struct {
 
 const amountOfInputs = 2
 
-const focusedTextColor = "205"
-
-var (
-	color         = te.ColorProfile().Color
-	focusedPrompt = te.String("> ").Foreground(color("205")).String()
-	blurredPrompt = "> "
-)
-
 func InitialAdd() AddModel {
 	key := textinput.NewModel()
 	key.Placeholder = "key"
@@ -36,9 +27,7 @@ func (m AddModel) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (m AddModel) Update(msg tea.Msg, entries []common.Entry) (AddModel, []common.Entry, tea.Cmd) {
-	var cmd tea.Cmd
-
+func (m AddModel) Update(msg tea.Msg, repo common.Repository) (AddModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -62,51 +51,34 @@ func (m AddModel) Update(msg tea.Msg, entries []common.Entry) (AddModel, []commo
 				if i == m.activeInput {
 					// Set focused state
 					inputs[i].Focus()
-					inputs[i].Prompt = focusedPrompt
-					inputs[i].TextColor = focusedTextColor
+					inputs[i].Prompt = common.FocusedPrompt
+					inputs[i].TextColor = common.FocusedTextColor
 					continue
 				}
 				// Remove focused state
 				inputs[i].Blur()
-				inputs[i].Prompt = blurredPrompt
+				inputs[i].Prompt = common.BlurredPrompt
 				inputs[i].TextColor = ""
 			}
 
 			m.key = inputs[0]
 			m.value = inputs[1]
 
-			return m, entries, nil
+			return m, nil
 		case "enter":
 			key := m.key.Value()
 			value := m.value.Value()
-			entries = append(entries, common.Entry{Key: key, Value: value})
+			repo.Add(common.Entry{Key: key, Value: value})
 			m.key.Reset()
 			m.value.Reset()
-			return m, entries, nil
+			return m, nil
 		}
 	}
 
-	// Handle character input and blinks
-	m, cmd = updateInputs(msg, m)
-	return m, entries, cmd
-}
-
-// Pass messages and models through to text input components. Only text inputs
-// with Focus() set will respond, so it's safe to simply update all of them
-// here without any further logic.
-func updateInputs(msg tea.Msg, m AddModel) (AddModel, tea.Cmd) {
-	var (
-		cmd  tea.Cmd
-		cmds []tea.Cmd
-	)
-
-	m.key, cmd = m.key.Update(msg)
-	cmds = append(cmds, cmd)
-
-	m.value, cmd = m.value.Update(msg)
-	cmds = append(cmds, cmd)
-
-	return m, tea.Batch(cmds...)
+	var keyCmds, valueCmds tea.Cmd
+	m.key, keyCmds = m.key.Update(msg)
+	m.value, valueCmds = m.value.Update(msg)
+	return m, tea.Batch(keyCmds, valueCmds)
 }
 
 func (m AddModel) View() string {

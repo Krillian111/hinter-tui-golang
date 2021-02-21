@@ -18,6 +18,7 @@ const amountOfInputs = 2
 func InitialAdd() AddModel {
 	key := textinput.NewModel()
 	key.Placeholder = "key"
+	key.Focus()
 	value := textinput.NewModel()
 	value.Placeholder = "value"
 	return AddModel{key, value, 0}

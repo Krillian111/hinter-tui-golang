@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"hinter/hinter/common"
+	"hinter/hinter/views"
 )
 
 type SearchModel struct {
@@ -38,11 +39,6 @@ func (m SearchModel) View() string {
 	s := "\n"
 	s += m.query.View()
 	s += "\n"
-	for i := 0; i < len(m.results); i++ {
-		s += m.results[i].Key
-		s += " | "
-		s += m.results[i].Value
-		s += "\n"
-	}
+	s += views.FromEntries([]int{20, 60}, m.results).View()
 	return s
 }
